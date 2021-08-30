@@ -6,6 +6,12 @@ import (
 	"os"
 )
 
+const (
+	defaultFile = "├───"
+	endFile     = "└───"
+	childFile   = "│\t"
+)
+
 func main() {
 	out := os.Stdout
 	if !(len(os.Args) == 2 || len(os.Args) == 3) {
@@ -27,7 +33,6 @@ type Node struct {
 
 func dirTree(out io.Writer, path string, needPrintFiles bool) error {
 	builderDirTree, _ := buildDirTree([]*Node{}, path, path, needPrintFiles)
-	//builderDirTree := buildDirTree(files, path, needPrintFiles)
 
 	if len(builderDirTree) > 2 {
 		//out.Write()
