@@ -1,15 +1,18 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
+	"strconv"
+	"strings"
 )
 
 const (
 	defaultFile = "├───"
 	endFile     = "└───"
-	childFile   = "│\t"
+	childMargin = "│\t"
 )
 
 func main() {
@@ -32,13 +35,13 @@ type Node struct {
 }
 
 func dirTree(out io.Writer, path string, needPrintFiles bool) error {
-	builderDirTree, _ := buildDirTree([]*Node{}, path, path, needPrintFiles)
+	nodes, err := buildDirTree([]*Node{}, path, path, needPrintFiles)
 
-	if len(builderDirTree) > 2 {
-		//out.Write()
+	if err != nil {
+		return err
 	}
 
-	//out.Write(builderDirTree)
+	draw(out, nodes, path)
 
 	return nil
 }
@@ -77,13 +80,43 @@ func buildDirTree(nodes []*Node, root string, path string, needPrintFiles bool) 
 	return nodes, nil
 }
 
-func draw(nodes []Node) {
-	//var result []string
-	//
-	//for index, node := range nodes {
-	//
-	//	if node
-	//	//result = append(result, )
-	//
-	//}
+func draw(out io.Writer, nodes []*Node, rootPath string) {
+	lenNodes := len(nodes)
+
+	for index, node := range nodes {
+		path := strings.Replace(node.Path, rootPath+string(os.PathSeparator), "", 1)
+		splitPath := strings.Split(path, string(os.PathSeparator))
+
+		depth := len(splitPath)
+
+		for i := 1; i < depth; i++ {
+			fmt.Fprint(out, childMargin)
+		}
+
+		sizeInformation := ""
+
+		if !node.FileInfo.IsDir() {
+			var size string
+
+			if node.FileInfo.Size() > 0 {
+				size = strconv.Itoa(int(node.FileInfo.Size())) + "b"
+			} else {
+				size = "empty"
+			}
+
+			sizeInformation = " (" + size + ")"
+		}
+
+		fileInfo := node.FileInfo.Name() + sizeInformation + "\n"
+
+		if lenNodes == index {
+			fmt.Fprint(out, endFile+fileInfo)
+		} else {
+			fmt.Fprint(out, defaultFile+fileInfo)
+		}
+
+		if node.Children != nil {
+			draw(out, node.Children, rootPath)
+		}
+	}
 }
