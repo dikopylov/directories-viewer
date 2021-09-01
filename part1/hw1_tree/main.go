@@ -12,7 +12,8 @@ import (
 const (
 	defaultFile = "├───"
 	endFile     = "└───"
-	childMargin = "│\t"
+	childMargin = "│   "
+	space       = "    "
 )
 
 func main() {
@@ -41,12 +42,13 @@ func dirTree(out io.Writer, path string, needPrintFiles bool) error {
 		return err
 	}
 
-	draw(out, nodes, path)
+	draw(out, nodes, path, "")
 
 	return nil
 }
 
 func buildDirTree(nodes []*Node, root string, path string, needPrintFiles bool) ([]*Node, error) {
+	nodes = nil
 	files, err := ioutil.ReadDir(path)
 
 	if err != nil {
@@ -80,7 +82,7 @@ func buildDirTree(nodes []*Node, root string, path string, needPrintFiles bool) 
 	return nodes, nil
 }
 
-func draw(out io.Writer, nodes []*Node, rootPath string) {
+func draw(out io.Writer, nodes []*Node, rootPath string, prevSymbol string) {
 	lenNodes := len(nodes)
 
 	for index, node := range nodes {
@@ -90,6 +92,11 @@ func draw(out io.Writer, nodes []*Node, rootPath string) {
 		depth := len(splitPath)
 
 		for i := 1; i < depth; i++ {
+			if (i+1) == depth && prevSymbol == endFile {
+				fmt.Fprint(out, space)
+				continue
+			}
+
 			fmt.Fprint(out, childMargin)
 		}
 
@@ -108,15 +115,20 @@ func draw(out io.Writer, nodes []*Node, rootPath string) {
 		}
 
 		fileInfo := node.FileInfo.Name() + sizeInformation + "\n"
+		var prevSymbol string
 
-		if lenNodes == index {
+		isLastFile := lenNodes == (index + 1)
+
+		if isLastFile {
+			prevSymbol = endFile
 			fmt.Fprint(out, endFile+fileInfo)
 		} else {
+			prevSymbol = defaultFile
 			fmt.Fprint(out, defaultFile+fileInfo)
 		}
 
 		if node.Children != nil {
-			draw(out, node.Children, rootPath)
+			draw(out, node.Children, rootPath, prevSymbol)
 		}
 	}
 }
