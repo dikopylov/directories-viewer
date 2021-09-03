@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
-	"strings"
 )
 
 const (
@@ -42,7 +41,7 @@ func dirTree(out io.Writer, path string, needPrintFiles bool) error {
 		return err
 	}
 
-	draw(out, nodes, path, "")
+	drawNodes(out, nodes, path, 1)
 
 	return nil
 }
@@ -82,20 +81,18 @@ func buildDirTree(nodes []*Node, root string, path string, needPrintFiles bool) 
 	return nodes, nil
 }
 
-func draw(out io.Writer, nodes []*Node, rootPath string, prevSymbol string) {
+func drawNodes(out io.Writer, nodes []*Node, rootPath string, inputMargin int) {
 	lenNodes := len(nodes)
 
 	for index, node := range nodes {
-		path := strings.Replace(node.Path, rootPath+string(os.PathSeparator), "", 1)
-		splitPath := strings.Split(path, string(os.PathSeparator))
+		//path := strings.Replace(node.Path, rootPath+string(os.PathSeparator), "", 1)
+		//splitPath := strings.Split(path, string(os.PathSeparator))
 
-		depth := len(splitPath)
-
-		for i := 1; i < depth; i++ {
-			if (i+1) == depth && prevSymbol == endFile {
-				fmt.Fprint(out, space)
-				continue
-			}
+		for i := 1; i < inputMargin; i++ {
+			//if (i+1) == depth && parenSymbol == endFile {
+			//	fmt.Fprint(out, space)
+			//	continue
+			//}
 
 			fmt.Fprint(out, childMargin)
 		}
@@ -128,7 +125,14 @@ func draw(out io.Writer, nodes []*Node, rootPath string, prevSymbol string) {
 		}
 
 		if node.Children != nil {
-			draw(out, node.Children, rootPath, prevSymbol)
+
+			newMargin := inputMargin
+
+			if prevSymbol == defaultFile {
+				newMargin++
+			}
+
+			drawNodes(out, node.Children, rootPath, newMargin)
 		}
 	}
 }
