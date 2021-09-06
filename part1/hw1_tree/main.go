@@ -9,10 +9,13 @@ import (
 )
 
 const (
-	defaultFile = "├───"
-	endFile     = "└───"
-	childMargin = "│   "
-	space       = "    "
+	defaultNode   = "├───"
+	endNode       = "└───"
+	childMargin   = "│\t"
+	space         = "\t"
+	emptySizeNode = " (empty)"
+	sizeNode      = " (%vb)"
+	newLine       = "\n"
 )
 
 func main() {
@@ -29,24 +32,24 @@ func main() {
 }
 
 type Node struct {
-	Path     string
-	FileInfo os.FileInfo
-	Children []*Node
+	path     string
+	fileInfo os.FileInfo
+	children []Node
 }
 
 func dirTree(out io.Writer, path string, needPrintFiles bool) error {
-	nodes, err := buildDirTree([]*Node{}, path, path, needPrintFiles)
+	nodes, err := buildDirTree([]Node{}, path, path, needPrintFiles)
 
 	if err != nil {
 		return err
 	}
 
-	drawNodes(out, nodes, path, 1)
+	drawNodes(out, nodes, needPrintFiles, "")
 
 	return nil
 }
 
-func buildDirTree(nodes []*Node, root string, path string, needPrintFiles bool) ([]*Node, error) {
+func buildDirTree(nodes []Node, root string, path string, needPrintFiles bool) ([]Node, error) {
 	nodes = nil
 	files, err := ioutil.ReadDir(path)
 
@@ -61,7 +64,7 @@ func buildDirTree(nodes []*Node, root string, path string, needPrintFiles bool) 
 
 		isDir := file.IsDir()
 
-		var childrensNodes []*Node = nil
+		var childrensNodes []Node = nil
 
 		currentPath := path + string(os.PathSeparator) + file.Name()
 
@@ -70,69 +73,58 @@ func buildDirTree(nodes []*Node, root string, path string, needPrintFiles bool) 
 		}
 
 		node := Node{
-			Path:     currentPath,
-			FileInfo: file,
-			Children: childrensNodes,
+			path:     currentPath,
+			fileInfo: file,
+			children: childrensNodes,
 		}
 
-		nodes = append(nodes, &node)
+		nodes = append(nodes, node)
 	}
 
 	return nodes, nil
 }
 
-func drawNodes(out io.Writer, nodes []*Node, rootPath string, inputMargin int) {
-	lenNodes := len(nodes)
+func drawNodes(out io.Writer, fileNodes []Node, needPrintFiles bool, levelPrefix string) {
+	for key, node := range fileNodes {
+		length := len(fileNodes)
+		nodePathName := levelPrefix
 
-	for index, node := range nodes {
-		//path := strings.Replace(node.Path, rootPath+string(os.PathSeparator), "", 1)
-		//splitPath := strings.Split(path, string(os.PathSeparator))
-
-		for i := 1; i < inputMargin; i++ {
-			//if (i+1) == depth && parenSymbol == endFile {
-			//	fmt.Fprint(out, space)
-			//	continue
-			//}
-
-			fmt.Fprint(out, childMargin)
+		if length > key+1 {
+			nodePathName += defaultNode
 		}
 
-		sizeInformation := ""
+		if length == key+1 {
+			nodePathName += endNode
+		}
 
-		if !node.FileInfo.IsDir() {
-			var size string
+		nodePathName += node.fileInfo.Name()
+		nodeSize := int(node.fileInfo.Size())
 
-			if node.FileInfo.Size() > 0 {
-				size = strconv.Itoa(int(node.FileInfo.Size())) + "b"
-			} else {
-				size = "empty"
+		if !node.fileInfo.IsDir() {
+			if needPrintFiles && nodeSize == 0 {
+				nodePathName += emptySizeNode
 			}
 
-			sizeInformation = " (" + size + ")"
+			if needPrintFiles && nodeSize > 0 {
+				nodePathName += fmt.Sprintf(sizeNode, strconv.Itoa(nodeSize))
+			}
 		}
 
-		fileInfo := node.FileInfo.Name() + sizeInformation + "\n"
-		var prevSymbol string
+		nodePathName += newLine
+		out.Write([]byte(nodePathName))
 
-		isLastFile := lenNodes == (index + 1)
+		if len(node.children) > 0 {
+			childrenPrefix := levelPrefix
 
-		if isLastFile {
-			prevSymbol = endFile
-			fmt.Fprint(out, endFile+fileInfo)
-		} else {
-			prevSymbol = defaultFile
-			fmt.Fprint(out, defaultFile+fileInfo)
-		}
-
-		if node.Children != nil {
-
-			newMargin := inputMargin
-
-			if prevSymbol == defaultFile {
-				newMargin++
+			if length > key+1 {
+				childrenPrefix += childMargin
 			}
 
-			drawNodes(out, node.Children, rootPath, newMargin)
+			if length == key+1 {
+				childrenPrefix += space
+			}
+
+			drawNodes(out, node.children, needPrintFiles, childrenPrefix)
 		}
 	}
 }
