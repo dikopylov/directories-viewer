@@ -5,6 +5,11 @@
 # Description
 Displays a tree of directories and files (if the -f option is specified).
 
+Run:
+```shell
+go run main.go . [-f]
+```
+
 Run tests:
 
 ```
@@ -49,6 +54,11 @@ go run main.go .
 Утилита tree.
 
 Выводит дерево каталогов и файлов (если указана опция -f).
+
+Запуск:  
+```shell
+go run main.go . [-f]
+```
 
 Запускать тесты через `go test -v` находясь в папке c заданием. После запуска вы должны увидеть такой результат:
 
