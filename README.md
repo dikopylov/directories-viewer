@@ -1,4 +1,4 @@
-# Tree utility
+# Directories tree utility
 1. [English](#Description)
 2. [Русский](#Описание)
 
